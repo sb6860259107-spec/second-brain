@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Second Brain" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Second Brain</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Geist:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css" />
+    <link rel="icon" type="image/svg+xml" href="/sb-mark-square.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/graph.css" />
+  </head>
+
+  <body>
+    <div id="auth-overlay">
+      <div class="auth-card">
+        <div class="brain-logo">
+          <i class="ti ti-brain"></i>
+        </div>
+        <h1>Second Brain</h1>
+        <p>Enter your Bearer token to connect to your personal memory layer. This is the password you chose when you set up Second Brain.</p>
+        <form
+          class="field-group"
+          onsubmit="
+            connect()
+            return false
+          "
+        >
+          <input type="text" name="username" value="user" autocomplete="username" style="display: none" />
+          <input type="url" id="auth-url" autocomplete="off" autocapitalize="none" />
+          <input type="password" id="auth-token" placeholder="Bearer token (your setup password)" autocomplete="current-password" />
+          <button id="auth-connect" type="submit">Connect</button>
+        </form>
+        <div id="auth-error"></div>
+      </div>
+    </div>
+
+    <div id="app" style="display: none">
+      <div id="sidebar">
+        <div class="sb-logo">
+          <div class="brain-avatar">
+            <i class="ti ti-brain"></i>
+          </div>
+          <div>
+            <div class="sb-brand-name">Second Brain</div>
+            <div class="sb-brand-status" id="sb-status">always remembers</div>
+          </div>
+        </div>
+        <nav class="sb-nav">
+          <button class="sb-tab active" id="sb-tab-recall" onclick="switchTab('recall')"><i class="ti ti-search"></i><span>Recall</span></button>
+          <button class="sb-tab" id="sb-tab-recent" onclick="switchTab('recent')"><i class="ti ti-clock"></i><span>Recent</span></button>
+          <button class="sb-tab" id="sb-tab-remember" onclick="switchTab('remember')"><i class="ti ti-plus"></i><span>Remember</span></button>
+          <button class="sb-tab" id="sb-tab-graph" onclick="switchTab('graph')"><i class="ti ti-affiliate"></i><span>Graph</span></button>
+        </nav>
+        <div class="sb-footer">
+          <button class="sb-footer-btn" onclick="openMenu()"><i class="ti ti-settings"></i><span>Settings</span></button>
+        </div>
+      </div>
+
+      <div id="main-panel">
+        <div id="topbar">
+          <div class="brain-avatar">
+            <i class="ti ti-brain"></i>
+          </div>
+          <div class="topbar-info">
+            <div class="topbar-name">Second Brain</div>
+            <div class="topbar-status" id="topbar-status">always remembers</div>
+          </div>
+          <button class="topbar-menu" onclick="openMenu()"><i class="ti ti-dots"></i></button>
+        </div>
+
+        <div id="screens">
+          <div class="screen active" id="screen-recall">
+            <div id="recall-messages">
+              <div class="recall-hero" id="recall-welcome">
+                <div class="eyebrow">Recall</div>
+                <div class="hero-line">Ask me anything you've stored away &mdash; I'll find it and answer in your own words.</div>
+              </div>
+            </div>
+            <div class="filter-bar" style="padding-bottom: 0">
+              <div class="filter-inner">
+                <i class="ti ti-tag" style="color: var(--text-tertiary); font-size: 13px; flex-shrink: 0"></i>
+                <select class="filter-field" id="tag-filter-recall" onchange="onTagChange(this.value)">
+                  <option value="">All tags</option>
+                </select>
+              </div>
+            </div>
+            <div class="suggestions-row">
+              <button class="suggestion-pill" onclick="sendSuggestion('What am I working on?')">What am I working on?</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('What did I decide recently?')">What did I decide recently?</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('Show my tasks')">Show my tasks</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('What are my goals?')">What are my goals?</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('What ideas do I have?')">What ideas do I have?</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('What happened last week?')">Last week</button>
+              <button class="suggestion-pill" onclick="sendSuggestion('What did I decide this month?')">This month</button>
+            </div>
+            <div class="input-bar">
+              <div class="input-inner">
+                <button id="recall-clear-btn" class="refresh-btn" onclick="clearRecall()" style="display: none" title="Clear Chat">
+                  <i class="ti ti-trash"></i>
+                </button>
+                <textarea
+                  class="input-field"
+                  id="recall-input"
+                  placeholder="Ask your brain..."
+                  rows="1"
+                  onkeydown="handleRecallKey(event)"
+                  oninput="autoResize(this)"
+                ></textarea>
+                <button class="send-btn" onclick="sendRecall()"><i class="ti ti-arrow-up"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen" id="screen-recent">
+            <div id="recent-list">
+              <div class="empty-state"><i class="ti ti-clock"></i><span>Loading memories...</span></div>
+            </div>
+            <div class="filter-bar">
+              <div class="filter-inner">
+                <i class="ti ti-tag" style="color: var(--text-tertiary); font-size: 13px; flex-shrink: 0"></i>
+                <select class="filter-field" id="tag-filter-recent" onchange="onTagChange(this.value)">
+                  <option value="">All tags</option>
+                </select>
+                <select class="filter-field" id="time-filter-recent" onchange="onTimeRangeChange(this.value)" style="min-width: 0">
+                  <option value="">All time</option>
+                  <option value="today">Today</option>
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="month">This month</option>
+                </select>
+                <button class="refresh-btn" id="refresh-btn" onclick="loadRecent()"><i class="ti ti-refresh"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen" id="screen-remember">
+            <div id="remember-messages">
+              <div class="recall-hero" id="remember-intro">
+                <div class="eyebrow">Remember</div>
+                <div class="hero-line">What's worth keeping? Write it down &mdash; add <span class="hashtag">#tags</span> anywhere and I'll file it.</div>
+              </div>
+            </div>
+            <div class="input-bar">
+              <div class="input-hint">Tip: add <span class="hint-tags">#tags</span> anywhere in your message</div>
+              <div class="input-inner">
+                <button id="remember-clear-btn" class="refresh-btn" onclick="clearRemember()" style="display: none" title="Clear Chat">
+                  <i class="ti ti-trash"></i>
+                </button>
+                <textarea
+                  class="input-field"
+                  id="remember-input"
+                  placeholder="Tell your brain something..."
+                  rows="1"
+                  onkeydown="handleRememberKey(event)"
+                  oninput="autoResize(this)"
+                ></textarea>
+                <button class="send-btn" onclick="sendRemember()"><i class="ti ti-arrow-up"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="screen" id="screen-graph">
+            <div class="graph-toolbar">
+              <div class="graph-legend">
+                <span><i class="gl-dot" style="background: #fd540a"></i>Knowledge</span>
+                <span><i class="gl-dot" style="background: #4a7c8c"></i>Events</span>
+                <span><i class="gl-dot" style="background: #9a958a"></i>Unsorted</span>
+              </div>
+              <div class="graph-controls">
+                <button class="graph-btn" onclick="graphZoom(0.8)" title="Zoom out"><i class="ti ti-minus"></i></button>
+                <button class="graph-btn" onclick="graphZoom(1.25)" title="Zoom in"><i class="ti ti-plus"></i></button>
+                <button class="graph-btn" onclick="graphFit()" title="Fit to view"><i class="ti ti-maximize"></i></button>
+                <button class="graph-btn" onclick="loadGraph()" title="Refresh"><i class="ti ti-refresh"></i></button>
+              </div>
+            </div>
+            <canvas id="graph-canvas"></canvas>
+            <div class="graph-empty" id="graph-empty" style="display: none">No connections yet — link memories, or let them auto-connect as you add more.</div>
+          </div>
+        </div>
+
+        <div id="navbar">
+          <button class="nav-tab active" id="tab-recall" onclick="switchTab('recall')"><i class="ti ti-search"></i><span>Recall</span></button>
+          <button class="nav-tab" id="tab-recent" onclick="switchTab('recent')"><i class="ti ti-clock"></i><span>Recent</span></button>
+          <button class="nav-tab" id="tab-remember" onclick="switchTab('remember')"><i class="ti ti-plus"></i><span>Remember</span></button>
+          <button class="nav-tab" id="tab-graph" onclick="switchTab('graph')"><i class="ti ti-affiliate"></i><span>Graph</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirm-dialog">
+      <div class="confirm-sheet">
+        <h3>Forget this memory?</h3>
+        <p>This can't be undone. The memory will be removed from your brain.</p>
+        <div class="confirm-actions">
+          <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+          <button class="btn-delete" onclick="confirmForget()">Forget</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="append-sheet">
+      <div class="append-inner">
+        <h3>Add an update</h3>
+        <div class="append-context" id="append-context-preview"></div>
+        <div class="append-input-wrap">
+          <textarea id="append-textarea" placeholder="What's changed or new?" rows="3"></textarea>
+        </div>
+        <div class="append-actions">
+          <button class="btn-append-cancel" onclick="closeAppend()">Cancel</button>
+          <button class="btn-append-save" id="append-save-btn" onclick="saveAppend()">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="edit-sheet">
+      <div class="edit-inner">
+        <h3>Edit memory</h3>
+        <div class="edit-existing-tags" id="edit-existing-tags"></div>
+        <div class="append-input-wrap">
+          <textarea id="edit-textarea" placeholder="Edit your memory..." rows="5"></textarea>
+        </div>
+        <div class="edit-hint">Use <span style="font-style: italic">#hashtags</span> to add new tags</div>
+        <div class="append-actions">
+          <button class="btn-append-cancel" onclick="closeEdit()">Cancel</button>
+          <button class="btn-append-save" id="edit-save-btn" onclick="saveEdit()">Save</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="view-sheet">
+      <div class="view-inner">
+        <div class="view-header">
+          <h3>Memory</h3>
+          <button class="btn-close-icon" onclick="closeView()"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="view-content" id="view-content-text"></div>
+        <div class="view-tags" id="view-tags-container"></div>
+        <div class="view-related" id="view-related" style="display: none"></div>
+        <div class="view-actions">
+          <button class="btn-view-append" id="view-btn-append"><i class="ti ti-writing"></i> Append</button>
+          <button class="btn-view-edit" id="view-btn-edit"><i class="ti ti-pencil"></i> Edit</button>
+          <button class="btn-view-forget" id="view-btn-forget"><i class="ti ti-trash"></i> Forget</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="menu-sheet">
+      <div class="menu-inner">
+        <h3>Second Brain</h3>
+        <div class="stats-panel" id="stats-panel">
+          <div class="stats-kpi-row">
+            <div class="stats-kpi-card">
+              <div class="stats-kpi-value" id="stats-count">—</div>
+              <div class="stats-kpi-label">Memories</div>
+            </div>
+            <div class="stats-kpi-card">
+              <div class="stats-kpi-value" id="stats-importance">—</div>
+              <div class="stats-kpi-label">Avg Importance</div>
+            </div>
+          </div>
+          <div class="stats-top-tags">
+            <div class="stats-top-tags-label">Most used tags</div>
+            <div class="stats-tags" id="stats-tags"></div>
+          </div>
+        </div>
+        <div class="digest-section" id="patterns-section" style="display: none"></div>
+        <div class="digest-section" id="digest-section" style="display: none"></div>
+        <div class="digest-section" id="vectorize-section" style="display: none"></div>
+        <div class="digest-section" id="classify-section" style="display: none"></div>
+        <div class="theme-row">
+          <span class="theme-row-label">Appearance</span>
+          <div class="theme-toggle" id="theme-toggle">
+            <button data-theme-val="light" onclick="setTheme('light')" title="Light"><i class="ti ti-sun"></i></button>
+            <button data-theme-val="dark" onclick="setTheme('dark')" title="Dark"><i class="ti ti-moon"></i></button>
+            <button data-theme-val="auto" onclick="setTheme('auto')" title="Match system">Auto</button>
+          </div>
+        </div>
+        <button
+          class="menu-item"
+          onclick="
+            closeMenu()
+            switchTab('recent')
+          "
+        >
+          <i class="ti ti-clock"></i> View all memories
+        </button>
+        <button class="menu-item" onclick="openIntegrations()"><i class="ti ti-plug"></i> Integrations</button>
+        <button class="menu-item" onclick="exportMemories('json')"><i class="ti ti-download"></i> Export as JSON</button>
+        <button class="menu-item" onclick="exportMemories('markdown')"><i class="ti ti-markdown"></i> Export as Markdown</button>
+        <div class="about-credits" id="about-credits" aria-label="About Second Brain"></div>
+        <button class="menu-item danger" onclick="logout()"><i class="ti ti-logout"></i> Disconnect</button>
+      </div>
+    </div>
+
+    <div id="integrations-sheet">
+      <div class="menu-inner">
+        <div class="view-header">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <button class="btn-close-icon" id="integrations-back" onclick="backToMenu()" title="Back to settings"><i class="ti ti-arrow-left"></i></button>
+            <h3 style="margin-bottom: 0" id="integrations-title">Integrations</h3>
+          </div>
+          <button class="btn-close-icon" onclick="closeIntegrations()"><i class="ti ti-x"></i></button>
+        </div>
+        <p class="digest-note" id="integrations-intro">Connect the tools where your context already lives. Synced content stays up to date and surfaces in recall like any other memory.</p>
+        <div id="integrations-list"><p class="digest-note">Loading&hellip;</p></div>
+      </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script src="credits.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/ui-chat.js"></script>
+    <script src="js/recall.js"></script>
+    <script src="js/recent.js"></script>
+    <script src="js/remember.js"></script>
+    <script src="js/memory-crud.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/integrations.js"></script>
+    <script src="js/graph-canvas.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/download-app.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
